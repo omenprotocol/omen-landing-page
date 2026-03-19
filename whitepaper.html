@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Omen Protocol — Technical Whitepaper v0.1.0</title>
+<meta name="description" content="Technical specification for the Omen trust primitive. Move-native reputation infrastructure for the Sui Network."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --white: #FAFAF8;
+    --black: #0C0C0A;
+    --ink: #1A1A18;
+    --muted: #6B6B68;
+    --faint: #AEAEA8;
+    --border: #E2E2DC;
+    --border-dark: #C8C8C0;
+    --green: #2DB832;
+    --green-dark: #239128;
+    --green-bg: #EBF7EC;
+    --font-display: "Cormorant Garamond", serif;
+    --font-mono: "JetBrains Mono", monospace;
+    --font-sans: "DM Sans", sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-weight: 300;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--black); color: var(--white); }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 60px;
+    background: rgba(250,250,248,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { display: flex; align-items: center; text-decoration: none; }
+  .nav-right { display: flex; align-items: center; gap: 24px; }
+  .nav-right a {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+    color: var(--muted); text-decoration: none; transition: color 0.2s;
+  }
+  .nav-right a:hover { color: var(--ink); }
+  .nav-back {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+    color: var(--muted); text-decoration: none; transition: color 0.2s;
+  }
+  .nav-back:hover { color: var(--ink); }
+  .nav-back-arrow { font-size: 14px; }
+
+  /* LAYOUT */
+  .page-wrap {
+    max-width: 1100px; margin: 0 auto;
+    padding: 100px 40px 80px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+
+  /* SIDEBAR TOC */
+  .toc {
+    position: sticky; top: 80px;
+    border-right: 1px solid var(--border);
+    padding-right: 40px;
+  }
+  .toc-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--green); margin-bottom: 20px;
+    display: block;
+  }
+  .toc a {
+    display: block; font-size: 12px; color: var(--muted);
+    text-decoration: none; padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    transition: color 0.2s; line-height: 1.4;
+  }
+  .toc a:last-child { border-bottom: none; }
+  .toc a:hover { color: var(--ink); }
+  .toc a.active { color: var(--ink); font-weight: 500; }
+  .toc-num {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--faint); margin-right: 6px;
+  }
+  .toc-meta {
+    margin-top: 32px; padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .toc-meta p {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+    color: var(--faint); line-height: 1.8;
+  }
+  .toc-download {
+    display: block; margin-top: 16px;
+    background: var(--ink); color: var(--white);
+    padding: 10px 14px; text-align: center;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; text-decoration: none;
+    transition: background 0.2s;
+  }
+  .toc-download:hover { background: #333; }
+
+  /* CONTENT */
+  .content { min-width: 0; }
+
+  .wp-header { margin-bottom: 64px; padding-bottom: 40px; border-bottom: 1px solid var(--border); }
+  .wp-eyebrow {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--green); margin-bottom: 16px;
+  }
+  .wp-title {
+    font-family: var(--font-display); font-size: clamp(36px, 5vw, 64px);
+    font-weight: 500; line-height: 1.05; letter-spacing: -0.02em;
+    color: var(--ink); margin-bottom: 20px;
+  }
+  .wp-subtitle {
+    font-size: 16px; color: var(--muted); line-height: 1.75;
+    max-width: 580px; margin-bottom: 28px;
+  }
+  .wp-meta {
+    display: flex; gap: 32px; flex-wrap: wrap;
+  }
+  .wp-meta-item {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    color: var(--faint); line-height: 1.8;
+  }
+  .wp-meta-item strong {
+    display: block; color: var(--ink); font-weight: 500; margin-bottom: 2px;
+  }
+
+  /* SECTIONS */
+  .wp-section {
+    margin-bottom: 72px; padding-top: 16px;
+    scroll-margin-top: 80px;
+  }
+  .section-tag {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--green); margin-bottom: 8px;
+    display: block;
+  }
+  .wp-section h2 {
+    font-family: var(--font-display); font-size: clamp(28px, 3vw, 42px);
+    font-weight: 500; line-height: 1.1; letter-spacing: -0.01em;
+    color: var(--ink); margin-bottom: 24px;
+    padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .wp-section h3 {
+    font-family: var(--font-sans); font-size: 16px; font-weight: 500;
+    color: var(--ink); margin: 28px 0 10px;
+  }
+  .wp-section p {
+    font-size: 15px; color: var(--muted); line-height: 1.85;
+    margin-bottom: 16px;
+  }
+  .wp-section p:last-child { margin-bottom: 0; }
+
+  /* CALLOUT BLOCKS */
+  .callout {
+    border-left: 3px solid var(--green);
+    background: var(--green-bg);
+    padding: 16px 20px; margin: 24px 0;
+  }
+  .callout p {
+    font-size: 14px; color: var(--ink); line-height: 1.7; margin: 0;
+    font-style: italic;
+  }
+  .callout-label {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--green); margin-bottom: 6px;
+    display: block;
+  }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: var(--ink); color: #E8E8E4;
+    padding: 20px 24px; margin: 24px 0;
+    font-family: var(--font-mono); font-size: 12px; line-height: 1.8;
+    overflow-x: auto;
+  }
+  .code-block .comment { color: #555550; }
+  .code-block .keyword { color: #2DB832; }
+  .code-block .type { color: #88C8FF; }
+  .code-block .string { color: #F0C06A; }
+  .code-label {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--faint);
+    margin-bottom: -4px; display: block; margin-top: 24px;
+  }
+
+  /* SPEC TABLE */
+  .spec-table {
+    width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 13px;
+  }
+  .spec-table th {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--faint);
+    text-align: left; padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  .spec-table td {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    color: var(--muted); vertical-align: top; line-height: 1.6;
+  }
+  .spec-table td:first-child {
+    font-family: var(--font-mono); font-size: 12px; color: var(--ink);
+    white-space: nowrap;
+  }
+  .spec-table tr:last-child td { border-bottom: none; }
+  .spec-table tr:hover td { background: #F5F5F2; }
+
+  /* SLASH TABLE highlight */
+  .slash-row td:nth-child(2) { color: var(--ink); font-weight: 500; }
+
+  /* INLINE CODE */
+  code {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--green); background: var(--green-bg);
+    padding: 1px 6px;
+  }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    .page-wrap { grid-template-columns: 1fr; gap: 40px; padding: 80px 20px 60px; }
+    .toc { position: static; border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 24px; }
+    nav { padding: 0 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-back">
+    <span class="nav-back-arrow">&#8592;</span>
+    <img src="data:image/png;base64,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igAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASgAAAAAAAAAAAKigAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASioAAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIoAAAAAAAAAAAAAAAAAABKLKAAAAAAAAAAAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEosoAAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIqAAAAABSAAAAAoigAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAKIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAABSpAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABKAAAAAAAAAAACiKAAAAAAAAAAAAAAAAAAAIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAqKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABKKgAAAAAAAAAAAKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIoAAAAAACAAAAAAAAAAAAqAKgAogCoAKboAqACggKgAqAAu6ALugAAAG4AAAqACiAKgAogCiAKboAogCiAKIAqABuqAKIAqAAqAKIAogCiAKIAqACm6ALuboAqAAACoAAAAAKIAqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALsgAAAKD//Z" alt="Omen" style="height:24px;width:auto;margin-left:8px;"/>
+  </a>
+  <div class="nav-right">
+    <a href="#abstract">Abstract</a>
+    <a href="#identity">Identity</a>
+    <a href="#execution">Execution</a>
+    <a href="index.html#developer">Apply for Access</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- SIDEBAR TOC -->
+  <aside class="toc">
+    <span class="toc-label">Contents</span>
+    <a href="#abstract"><span class="toc-num">01</span>Abstract</a>
+    <a href="#identity"><span class="toc-num">02</span>Identity Primitive</a>
+    <a href="#seek-remit"><span class="toc-num">03</span>Seek &amp; Remit Architecture</a>
+    <a href="#storage"><span class="toc-num">04</span>Storage Layer</a>
+    <a href="#execution"><span class="toc-num">05</span>Execution &amp; Routing</a>
+    <a href="#auditor"><span class="toc-num">06</span>AuditorBadge System</a>
+    <a href="#agent-lineage"><span class="toc-num">07</span>Agent Lineage Graph</a>
+    <a href="#resilience"><span class="toc-num">08</span>Resilience Infrastructure</a>
+    <a href="#conclusion"><span class="toc-num">09</span>Conclusion</a>
+
+    <div class="toc-meta">
+      <p>
+        Version: v0.1.0<br/>
+        Network: Sui Testnet<br/>
+        Status: Active<br/>
+        Currency: USDC (testnet)<br/>
+        USDsui (mainnet)
+      </p>
+      <a href="index.html#developer" class="toc-download">Request Full PDF ↗</a>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+
+    <!-- HEADER -->
+    <header class="wp-header">
+      <div class="wp-eyebrow">Technical Specification · v0.1.0</div>
+      <h1 class="wp-title">The Programmable Trust Primitive for the Sui Network.</h1>
+      <p class="wp-subtitle">Solving the accountability crisis in on-chain finance and the agentic economy through Move-native reputation infrastructure.</p>
+      <div class="wp-meta">
+        <div class="wp-meta-item"><strong>Protocol</strong>Omen Labs</div>
+        <div class="wp-meta-item"><strong>Network</strong>Sui Testnet</div>
+        <div class="wp-meta-item"><strong>Version</strong>v0.1.0</div>
+        <div class="wp-meta-item"><strong>Currency</strong>USDC (testnet) · USDsui (mainnet)</div>
+        <div class="wp-meta-item"><strong>Grant</strong>00,000 DeFi Moonshot Applicant</div>
+      </div>
+    </header>
+
+    <!-- 01 ABSTRACT -->
+    <section class="wp-section" id="abstract">
+      <span class="section-tag">Section 01</span>
+      <h2>Abstract</h2>
+      <p>The Omen protocol provides a decentralized reputation layer for the Sui ecosystem. By linking human founders to their autonomous agents via zkLogin-verified OmenBadges, we establish a permanent accountability layer that operates natively within Move Programmable Transaction Blocks.</p>
+      <p>The system utilizes Walrus for secure storage of large audit metadata and Move PTBs for on-chain enforcement. Unlike traditional oracle-based trust systems, Omen operates as a PTB firewall — returning routing decisions rather than blocking transactions, ensuring full compatibility with existing DEX aggregators.</p>
+
+      <div class="callout">
+        <span class="callout-label">Core Thesis</span>
+        <p>"Web3 verifies smart contracts, but not who built them. Omen blocks malicious transactions before they execute — on-chain, at the trade level, native to Sui."</p>
+      </div>
+
+      <h3>The Trust Gap</h3>
+      <p>Web3 lacks a non-transferable reputation layer. A beautiful interface can hide a malicious team. Omen fills this by linking real-world builder credibility to soulbound on-chain identities, verified before capital moves.</p>
+
+      <h3>The Agentic Economy Problem</h3>
+      <p>As AI agents take over trading and governance, anonymous agents present an existential risk to on-chain capital. Omen provides the Proof-of-Creator layer needed for autonomous safety — cryptographically binding every agent to its human founder.</p>
+    </section>
+
+    <!-- 02 IDENTITY -->
+    <section class="wp-section" id="identity">
+      <span class="section-tag">Section 02</span>
+      <h2>Identity Primitive</h2>
+      <p>The foundation of the protocol is the <code>OmenBadge</code> — a soulbound Move object that cannot be transferred, sold, or delegated. Reputation is not a commodity.</p>
+
+      <div class="callout">
+        <span class="callout-label">Design Principle</span>
+        <p>"By making the identity object immobile at the Move bytecode level, we ensure trust belongs to the builder, not the highest bidder."</p>
+      </div>
+
+      <h3>Sybil Resistance — 50 USDC Staked Deposit</h3>
+      <p>Badge minting is free in terms of gas, but requires a refundable <strong>50 USDC staked deposit</strong> held by the protocol. This deposit is burned upon any successful slash event. This mechanism ensures that creating a new identity after a slash is economically costly, preventing reputation laundering through fresh wallets.</p>
+
+      <span class="code-label">Move · OmenBadge init</span>
+      <div class="code-block"><span class="keyword">public</span> <span class="keyword">entry</span> <span class="keyword">fun</span> <span class="type">init_badge</span>(
+  ctx: &<span class="keyword">mut</span> TxContext,
+  deposit: Coin&lt;<span class="type">USDC</span>&gt;,          <span class="comment">// 50 USDC required</span>
+  zk_proof: vector&lt;u8&gt;,         <span class="comment">// zkLogin proof</span>
+) {
+  <span class="keyword">assert!</span>(coin::value(&deposit) == <span class="string">50_000_000</span>, <span class="type">E_INSUFFICIENT_DEPOSIT</span>);
+  <span class="keyword">let</span> badge = OmenBadge {
+    id: object::new(ctx),
+    owner: tx_context::sender(ctx),
+    score: <span class="string">50</span>,               <span class="comment">// base score on mint</span>
+    deposit_locked: <span class="string">true</span>,
+    social_recovery_guardians: vector[],
+  };
+  transfer::transfer(badge, tx_context::sender(ctx));
+}</div>
+
+      <h3>Social Recovery — 7-Day Timelock</h3>
+      <p>Institutional users can register up to 5 guardians for badge recovery. A 3-of-5 guardian threshold with a 7-day timelock allows teams to recover badge access after key loss or team transitions — without forfeiting reputation history accumulated over time.</p>
+
+      <table class="spec-table">
+        <tr><th>Parameter</th><th>Value</th><th>Notes</th></tr>
+        <tr><td>Mint deposit</td><td>50 USDC</td><td>Refundable unless slashed</td></tr>
+        <tr><td>Base score on mint</td><td>50 / 100</td><td>Increases with on-chain activity</td></tr>
+        <tr><td>Recovery threshold</td><td>3-of-5 guardians</td><td>7-day timelock applies</td></tr>
+        <tr><td>Transfer</td><td>Disabled</td><td>Soulbound at bytecode level</td></tr>
+        <tr><td>Network (current)</td><td>Sui Testnet</td><td>USDC testnet tokens</td></tr>
+      </table>
+    </section>
+
+    <!-- 03 SEEK & REMIT -->
+    <section class="wp-section" id="seek-remit">
+      <span class="section-tag">Section 03</span>
+      <h2>Seek &amp; Remit Architecture</h2>
+      <p>The protocol operates as a read/write primitive with two distinct interaction modes.</p>
+
+      <h3>Seek — Reading Trust</h3>
+      <p><strong>Seek</strong> refers to wallets, dApps, and DEX aggregators querying the <code>OmenRegistry</code> in real-time. Any party can call <code>OmenRegistry::get_score</code> to retrieve a builder's current trust score before approving an interaction.</p>
+
+      <h3>Remit — Writing Audit Data</h3>
+      <p><strong>Remit</strong> refers to credentialed auditors pushing verified audit results back into the builder's score. Unlike permissionless vulnerability submission models that create audit cartels, only approved <code>AuditorBadge</code> holders can write to the registry. See Section 06 for the full AuditorBadge approval process.</p>
+
+      <table class="spec-table">
+        <tr><th>Operation</th><th>Function</th><th>Caller</th></tr>
+        <tr><td>get_score</td><td><code>OmenRegistry::get_score</code></td><td>Any party (read-only)</td></tr>
+        <tr><td>submit_audit</td><td><code>AuditorBadge::submit_audit</code></td><td>Approved AuditorBadge holders only</td></tr>
+        <tr><td>assert_trade_safety</td><td><code>OmenSafe::assert_trade_safety</code></td><td>DEX / PTB router</td></tr>
+        <tr><td>slash</td><td><code>OmenRegistry::slash</code></td><td>Protocol governance</td></tr>
+      </table>
+    </section>
+
+    <!-- 04 STORAGE -->
+    <section class="wp-section" id="storage">
+      <span class="section-tag">Section 04</span>
+      <h2>Storage Layer</h2>
+      <p>Heavy metadata — raw JSON outputs from AI code audits, full audit reports, agent behavior logs — is stored via Walrus Protocol. <code>OmenBadge</code> objects store a 256-bit hash and a Blob ID using Sui Dynamic Fields, ensuring O(1) verification efficiency without bloating on-chain state.</p>
+
+      <h3>Why Walrus</h3>
+      <p>Security data must outlive projects. A builder's audit history remains verifiable on Walrus even if the project disbands or the team disappears. The cryptographic anchor on Sui ensures the data cannot be silently altered.</p>
+
+      <table class="spec-table">
+        <tr><th>Data Type</th><th>Storage</th><th>Access Pattern</th></tr>
+        <tr><td>Trust score</td><td>Sui on-chain (OmenBadge)</td><td>O(1) from registry</td></tr>
+        <tr><td>Audit reports (PDF)</td><td>Walrus blob storage</td><td>Blob ID lookup</td></tr>
+        <tr><td>AI behavior logs (JSON)</td><td>Walrus blob storage</td><td>Blob ID lookup</td></tr>
+        <tr><td>Lineage graph root</td><td>Walrus + on-chain hash</td><td>Hash verification</td></tr>
+        <tr><td>Cryptographic proofs</td><td>Sui Dynamic Fields</td><td>O(1) on-chain</td></tr>
+      </table>
+    </section>
+
+    <!-- 05 EXECUTION -->
+    <section class="wp-section" id="execution">
+      <span class="section-tag">Section 05</span>
+      <h2>Execution &amp; Routing</h2>
+      <p>Omen integrates with DeepBook V3 to gate trading pools. The core mechanism is a <strong>PTB firewall router</strong> — not an oracle and not a hard revert. This distinction is critical for DEX aggregator compatibility.</p>
+
+      <h3>assert_trade_safety — Routing Skip, Not Revert</h3>
+      <p>The <code>assert_trade_safety</code> function returns <code>(bool, u64)</code>. A <code>false</code> return is a routing skip — the DEX routes the trade to an alternative pool. No transaction fails. No user sees an error. The risk is silently routed around.</p>
+      <p>This is what separates Omen from any system using <code>assert!</code>. A hard revert breaks aggregator compatibility. A routing skip is invisible to the user and non-breaking to the integration.</p>
+
+      <span class="code-label">Move · PTB Router</span>
+      <div class="code-block"><span class="keyword">public</span> <span class="keyword">fun</span> <span class="type">assert_trade_safety</span>(
+  registry: &OmenRegistry,
+  builder_badge: address,
+  min_score: u64,
+): (<span class="type">bool</span>, <span class="type">u64</span>) {          <span class="comment">// (safe_to_route, rejection_code)</span>
+  <span class="keyword">let</span> score = get_score(registry, builder_badge);
+  <span class="keyword">if</span> (score &gt;= min_score) {
+    (<span class="string">true</span>, <span class="string">0</span>)               <span class="comment">// route normally</span>
+  } <span class="keyword">else</span> {
+    (<span class="string">false</span>, <span class="type">E_SCORE_BELOW_THRESHOLD</span>)  <span class="comment">// routing skip</span>
+  }
+}</div>
+
+      <h3>DeepBook V3 Pool Gating</h3>
+      <p>Protocols can enforce a minimum trust score before allowing a builder to create or manage a liquidity pool, preventing initial seed attacks and anonymous capital injection from unverified actors.</p>
+    </section>
+
+    <!-- 06 AUDITOR BADGE -->
+    <section class="wp-section" id="auditor">
+      <span class="section-tag">Section 06</span>
+      <h2>AuditorBadge System</h2>
+      <p>Omen explicitly rejects the open vulnerability submission model. Permissionless audit submissions create audit cartels — coordinated groups that inflate or deflate scores for competitive advantage.</p>
+
+      <h3>3-of-3 Sub-Committee Approval</h3>
+      <p>All AuditorBadge approvals require unanimous sign-off from a dedicated three-member sub-committee:</p>
+
+      <table class="spec-table">
+        <tr><th>Seat</th><th>Role</th><th>Rationale</th></tr>
+        <tr><td>Seat 1</td><td>Sui Foundation representative</td><td>Ecosystem alignment</td></tr>
+        <tr><td>Seat 2</td><td>Independent Move security researcher</td><td>Technical independence</td></tr>
+        <tr><td>Seat 3</td><td>Existing tier-1 auditor</td><td>Peer accountability</td></tr>
+      </table>
+
+      <p>Current approved auditors include firms operating at the tier-1 level of the Move security ecosystem (MoveBit, Zellic, OtterSec class). All three seats must approve before an <code>AuditorBadge</code> is minted.</p>
+
+      <div class="callout">
+        <span class="callout-label">Design Principle</span>
+        <p>"Only credentialed auditors write to the registry. This is not decentralisation theatre — it is institutional-grade accountability with a permissioned write layer and a permissionless read layer."</p>
+      </div>
+    </section>
+
+    <!-- 07 AGENT LINEAGE -->
+    <section class="wp-section" id="agent-lineage">
+      <span class="section-tag">Section 07</span>
+      <h2>Agent Lineage Graph</h2>
+      <p>AI child agents are cryptographically linked to their creators via the <code>Lineage::verify_parent</code> primitive. The accountability is inherited and the slash cascade is hardcoded — not governance-controlled.</p>
+
+      <h3>Cascade Slash Percentages</h3>
+      <table class="spec-table slash-row">
+        <tr><th>Level</th><th>Slash Amount</th><th>Notes</th></tr>
+        <tr><td>Level 1 (direct child)</td><td>100% agent stake + 25% parent stake</td><td>Full agent burn, partial parent penalty</td></tr>
+        <tr><td>Level 2 (grandchild)</td><td>15% grandparent stake</td><td>Cascade stops here for third-party agents with waiver</td></tr>
+        <tr><td>Level 3+</td><td>No cascade</td><td>Lineage accountability terminates at Level 2</td></tr>
+      </table>
+
+      <h3>Third-Party Agent Liability</h3>
+      <p>Third-party agents (agents not created by the badge holder but operating on their behalf) require an explicit <code>LIABILITY_WAIVER</code> flag set on deployment. Without this flag, third-party agents are treated as direct Level 1 children for slash purposes. This prevents founders from offloading accountability to subcontracted agent builders.</p>
+
+      <span class="code-label">Move · Lineage Registration</span>
+      <div class="code-block"><span class="keyword">public</span> <span class="keyword">entry</span> <span class="keyword">fun</span> <span class="type">register_agent</span>(
+  parent_badge: &OmenBadge,
+  agent_address: address,
+  liability_waiver: <span class="type">bool</span>,    <span class="comment">// must be explicit for 3rd-party</span>
+  ctx: &<span class="keyword">mut</span> TxContext,
+) {
+  <span class="keyword">let</span> level = <span class="keyword">if</span> (liability_waiver) { <span class="type">LEVEL_2</span> } <span class="keyword">else</span> { <span class="type">LEVEL_1</span> };
+  <span class="comment">// Agent slash cascade determined at registration, not at slash time</span>
+  create_lineage_node(parent_badge, agent_address, level, ctx);
+}</div>
+    </section>
+
+    <!-- 08 RESILIENCE -->
+    <section class="wp-section" id="resilience">
+      <span class="section-tag">Section 08</span>
+      <h2>Resilience Infrastructure</h2>
+
+      <h3>SDK Fallback Architecture</h3>
+      <p>The Omen SDK operates a 2-second hard timeout before automatic L1 RPC fallback. If Omen's backend infrastructure goes down, the system continues routing using direct on-chain reads. This is the institutional trust message: <em>Omen's backend is a performance optimisation, not a dependency.</em></p>
+
+      <table class="spec-table">
+        <tr><th>Layer</th><th>Response Time</th><th>Fallback Behaviour</th></tr>
+        <tr><td>Redis cache (primary)</td><td>~20ms</td><td>Serves cached score</td></tr>
+        <tr><td>Omen API (secondary)</td><td>~200ms</td><td>Fresh on-chain read</td></tr>
+        <tr><td>L1 RPC (fallback)</td><td>2s timeout trigger</td><td>Direct Sui fullnode query</td></tr>
+      </table>
+
+      <h3>OmenRegistry Hybrid Indexing</h3>
+      <p>The OmenRegistry uses a hybrid indexing model with a custom PostgreSQL stack and failover RPC polling to ensure high data availability for institutional B2B partners. The on-chain state is always the source of truth — the off-chain index is a read optimisation layer only.</p>
+    </section>
+
+    <!-- 09 CONCLUSION -->
+    <section class="wp-section" id="conclusion">
+      <span class="section-tag">Section 09</span>
+      <h2>Conclusion</h2>
+      <p>Omen is the trust infrastructure standard for the Sui-native agentic economy. By making reputation programmatic and non-transferable, we ensure accountability remains central to every transaction — from human-initiated DeFi to fully autonomous agent-driven markets.</p>
+      <p>The protocol is live on Sui Testnet at v0.1.0. The 00,000 DeFi Moonshot application is active. Developer access is open to Sui ecosystem contributors, infrastructure teams, and teams building autonomous agents on-chain.</p>
+
+      <div class="callout">
+        <span class="callout-label">Current Status</span>
+        <p>Testnet live · v0.1.0 · USDC (testnet) · USDsui on mainnet · DeFi Moonshot application active</p>
+      </div>
+
+      <div style="margin-top:40px;padding-top:32px;border-top:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;">
+        <a href="index.html#developer" style="background:var(--ink);color:var(--white);padding:14px 28px;text-decoration:none;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;transition:background 0.2s;" onmouseover="this.style.background='#333'" onmouseout="this.style.background='var(--ink)'">Apply for Developer Access</a>
+        <a href="index.html" style="border:1px solid var(--border-dark);color:var(--ink);padding:14px 28px;text-decoration:none;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;background:var(--white);">Back to Home</a>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// Active TOC highlight on scroll
+const sections = document.querySelectorAll(".wp-section");
+const tocLinks = document.querySelectorAll(".toc a");
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      tocLinks.forEach(l => l.classList.remove("active"));
+      const active = document.querySelector();
+      if (active) active.classList.add("active");
+    }
+  });
+}, { threshold: 0.3, rootMargin: "-60px 0px -60% 0px" });
+sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
