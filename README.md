@@ -3,7 +3,7 @@
 **Trust infrastructure for the Sui agentic economy.**
 Built solo for Sui Overflow 2026 — Agentic Web track.
 
-🔗 **[Live demo →](#)** _(add your GitHub Pages URL here once deployed)_
+🔗 **[Live demo →](#)** _(https://omen-psi.vercel.app/)_
 
 ---
 
